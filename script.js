@@ -149,15 +149,19 @@
         SillyTavern.utility.showToast(`Note saved to "${folderToSaveIn === '##root##' ? 'Root Folder' : folderToSaveIn}"`, "success");
     }
 
-    function handleDeleteNote() {
-        if (!currentCharacterId || !currentFolderName) return;
-        const selectedIndex = parseInt(noteSelector.value, 10);
-        if (selectedIndex < 0) return;
-        characterNotesData[currentCharacterId][currentFolderName].splice(selectedIndex, 1);
-        saveNotes();
-        refreshNotesList();
-        SillyTavern.utility.showToast("Note deleted.", "success");
-    }
+    // Replace the old handleDeleteNote function in your script.js
+function handleDeleteNote() {
+    if (!currentCharacterId || !currentFolderName) return;
+    const selectedIndex = parseInt(noteSelector.value, 10);
+    if (selectedIndex < 0) return;
+
+    characterNotesData[currentCharacterId][currentFolderName].splice(selectedIndex, 1);
+    saveNotes();
+    refreshNotesList();
+    
+    // MODIFIED: Accessing showToast through getContext() is more reliable.
+    SillyTavern.getContext().utility.showToast("Note deleted.", "success");
+}
 
     function handleDeleteFolder() {
         const folderToDelete = folderSelector.value;
