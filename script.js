@@ -179,7 +179,13 @@ function handleDeleteNote() {
         }
     }
     
-    function ensureOnScreen() { /* ... unchanged ... */ }
+function ensureOnScreen() {
+    const rect = modal.getBoundingClientRect();
+    if (rect.left < 0) modal.style.left = '0px';
+    if (rect.top < 0) modal.style.top = '0px';
+    if (rect.right > window.innerWidth) modal.style.left = `${window.innerWidth - rect.width}px`;
+    if (rect.bottom > window.innerHeight) modal.style.top = `${window.innerHeight - rect.height}px`;
+}
 
     function createModal() {
         if (document.getElementById('character-notes-modal')) return;
