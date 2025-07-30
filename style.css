@@ -1,7 +1,6 @@
 #character-notes-modal {
     display: none;
     position: fixed;
-    /* MODIFIED: Increased z-index to ensure it's on top of everything */
     z-index: 9999; 
     left: 30%;
     top: 20%;
@@ -46,7 +45,8 @@
     flex-direction: column;
     gap: 10px;
     flex-grow: 1;
-    overflow-y: auto;
+    /* REMOVED: This conflicting overflow property was the cause of the bug. */
+    /* overflow-y: auto; */
 }
 
 .cnotes-folder-row {
@@ -104,7 +104,6 @@
     margin-right: auto;
 }
 
-/* MODIFIED: Increased specificity to override the general button style */
 #character-notes-actions #character-notes-save {
     background-color: #4CAF50; /* Green */
 }
