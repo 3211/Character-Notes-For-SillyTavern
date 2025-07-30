@@ -13,14 +13,14 @@
     async function saveNotes() {
         if (!currentCharacterId) return;
         await SillyTavern.extensions.saveExtensionSettings('Character-Notes', characterNotesData);
-        console.log('Character Notes saved.');
+        console.log('Character Notes: Notes saved.');
     }
 
     async function loadNotes() {
         const loadedData = await SillyTavern.extensions.loadExtensionSettings('Character-Notes');
         if (loadedData) {
             characterNotesData = loadedData;
-            console.log('Character Notes loaded.');
+            console.log('Character Notes: Notes loaded.');
         }
     }
 
@@ -118,7 +118,7 @@
     }
 
     function createModal() {
-        if (document.getElementById('character-notes-modal')) return; // Don't create if it already exists
+        if (document.getElementById('character-notes-modal')) return;
         modal = document.createElement('div');
         modal.id = 'character-notes-modal';
         modal.innerHTML = `
@@ -184,16 +184,12 @@
         }
     }
 
-    // This function runs when SillyTavern is ready
-    SillyTavern.eventSource.on('appReady', async () => {
-        // Find the Extensions dropdown menu
+    // This function will contain all our setup logic
+    async function initializeExtension() {
+        console.log("Character Notes: Initializing extension...");
+        
         const extensionsMenu = document.getElementById('extensionsMenu');
-        if (!extensionsMenu) {
-            console.error("Character Notes: Could not find extensions menu.");
-            return;
-        }
-
-        // Manually create the menu item, mimicking the working 'Notebook' extension
+        
         const menuItem = document.createElement('div');
         menuItem.classList.add('list-group-item', 'flex-container', 'flexGap5', 'interactable');
         menuItem.innerHTML = `
@@ -201,21 +197,33 @@
             <span>Character Notes</span>
         `;
 
-        // Add click listener to open our modal
         menuItem.addEventListener('click', () => {
             modal.style.display = 'block';
             refreshNoteUI();
         });
 
-        // Add the new item to the extensions menu
         extensionsMenu.appendChild(menuItem);
 
-        // Create the modal and load our data once on startup
         createModal();
         await loadNotes();
-    });
+        console.log("Character Notes: Initialization complete.");
+    }
+    
+    // This new function waits for the UI to be ready before running our setup
+    function waitForUI() {
+        console.log("Character Notes: Waiting for UI to be ready...");
+        const interval = setInterval(() => {
+            const extensionsMenu = document.getElementById('extensionsMenu');
+            if (extensionsMenu) {
+                console.log("Character Notes: UI is ready, clearing interval.");
+                clearInterval(interval);
+                initializeExtension();
+            }
+        }, 100); // Check every 100ms
+    }
 
-    // Run when a character is loaded to ensure notes are for the correct character
+    // Start the whole process
+    SillyTavern.eventSource.on('appReady', waitForUI);
     SillyTavern.eventSource.on('chatLoaded', refreshNoteUI);
 
 })();
