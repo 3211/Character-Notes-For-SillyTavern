@@ -1,5 +1,5 @@
 (function () {
-    console.log('CNotes: [V12-UI-Refinement] Script file loaded.');
+    console.log('CNotes: [V13-Definitive] Script file loaded.');
 
     // --- GLOBALS ---
     let characterNotesData = {};
@@ -52,7 +52,7 @@
         currentCharacterId = context.characterId;
         if (!characterNotesData[currentCharacterId]) characterNotesData[currentCharacterId] = { '##root##': [] };
 
-        const folders = Object.keys(characterNotesData[currentCharacterId]);
+        const folders = Object.keys(characterNotesData[currentCharacterId]).sort();
         folderSelector.innerHTML = '';
 
         const rootOption = document.createElement('option');
@@ -69,7 +69,6 @@
         });
 
         folderSelector.value = currentFolderName;
-        // MODIFIED: Also update the input field text to match the dropdown
         folderNameInput.value = (currentFolderName === '##root##') ? '' : currentFolderName;
         refreshNotesList();
     }
@@ -109,7 +108,6 @@
 
     function handleFolderSelect() {
         currentFolderName = folderSelector.value;
-        // MODIFIED: Update the input field to reflect the dropdown choice
         folderNameInput.value = (currentFolderName === '##root##') ? '' : currentFolderName;
         refreshNotesList();
     }
@@ -123,10 +121,9 @@
             return;
         }
 
-        // MODIFIED: Logic now prioritizes the text input for folder name
         let folderToSaveIn = folderNameInput.value.trim();
         if (!folderToSaveIn) {
-            folderToSaveIn = '##root##'; // Default to root if input is empty
+            folderToSaveIn = '##root##';
         }
         
         if (!characterNotesData[currentCharacterId][folderToSaveIn]) {
@@ -152,7 +149,15 @@
         SillyTavern.utility.showToast(`Note saved to "${folderToSaveIn === '##root##' ? 'Root Folder' : folderToSaveIn}"`, "success");
     }
 
-    function handleDeleteNote() { /* ... unchanged ... */ }
+    function handleDeleteNote() {
+        if (!currentCharacterId || !currentFolderName) return;
+        const selectedIndex = parseInt(noteSelector.value, 10);
+        if (selectedIndex < 0) return;
+        characterNotesData[currentCharacterId][currentFolderName].splice(selectedIndex, 1);
+        saveNotes();
+        refreshNotesList();
+        SillyTavern.utility.showToast("Note deleted.", "success");
+    }
 
     function handleDeleteFolder() {
         const folderToDelete = folderSelector.value;
@@ -178,7 +183,6 @@
         modal.id = 'character-notes-modal';
         modal.style.display = 'none';
 
-        // MODIFIED: Complete HTML rewrite for the new layout and native ST classes
         modal.innerHTML = `
             <div id="character-notes-header"><span>Character Notes</span><button id="character-notes-close" class="fa-solid fa-xmark"></button></div>
             <div id="character-notes-content">
@@ -200,14 +204,12 @@
             </div>`;
         document.body.appendChild(modal);
 
-        // Get all UI elements
         folderSelector = document.getElementById('character-notes-folder-selector');
         folderNameInput = document.getElementById('character-notes-folder-input');
         noteSelector = document.getElementById('character-notes-selector');
         noteTitleInput = document.getElementById('character-notes-title');
         noteContentTextarea = document.getElementById('character-notes-textarea');
 
-        // Add all event listeners
         document.getElementById('character-notes-close').addEventListener('click', closeModal);
         folderSelector.addEventListener('change', handleFolderSelect);
         document.getElementById('character-notes-delete-folder').addEventListener('click', handleDeleteFolder);
@@ -216,13 +218,32 @@
         document.getElementById('character-notes-save').addEventListener('click', handleSaveNote);
         document.getElementById('character-notes-delete').addEventListener('click', handleDeleteNote);
         
-        // Draggable logic... (remains the same)
+        let pos1=0,pos2=0,pos3=0,pos4=0;
+        const header=document.getElementById('character-notes-header');
+        if(header){header.onmousedown=function(e){e.preventDefault();pos3=e.clientX;pos4=e.clientY;document.onmouseup=()=>{document.onmouseup=null;document.onmousemove=null;};document.onmousemove=(e)=>{e.preventDefault();pos1=pos3-e.clientX;pos2=pos4-e.clientY;pos3=e.clientX;pos4=e.clientY;modal.style.top=`${modal.offsetTop-pos2}px`;modal.style.left=`${modal.offsetLeft-pos1}px`;};};}
     }
 
     // --- IMMEDIATE EXECUTION ---
     try {
-        // ... (this section is unchanged)
+        console.log('CNotes: Entering initialization block.');
+        const extensionsMenu = document.getElementById('extensionsMenu');
+        if (!extensionsMenu) throw new Error("#extensionsMenu not found in the DOM.");
+
+        const menuItem = document.createElement('div');
+        menuItem.classList.add('list-group-item', 'flex-container', 'flexGap5', 'interactable');
+        menuItem.innerHTML = `<i class="fa-solid fa-note-sticky"></i><span>Character Notes</span>`;
+        
+        menuItem.addEventListener('click', () => { (isModalOpen) ? closeModal() : openModal(); });
+        
+        extensionsMenu.appendChild(menuItem);
+        createModal();
+        loadNotes();
+        SillyTavern.getContext().eventSource.on('chatLoaded', () => {
+            currentFolderName = '##root##';
+            refreshFoldersUI();
+        });
+        console.log('CNotes: Initialization complete.');
     } catch (error) {
-        // ...
+        console.error('CNotes: A critical error occurred during initialization.', error);
     }
 })();
