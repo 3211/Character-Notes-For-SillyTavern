@@ -1,5 +1,5 @@
 (function () {
-    console.log('CNotes: [V17-PruneDisabled] Script file loaded.');
+    console.log('CNotes: [V18-DeletionListener] Script file loaded.');
 
     // --- GLOBALS ---
     let characterNotesData = {};
@@ -246,10 +246,20 @@
         createModal();
         loadNotes();
 
-        SillyTavern.getContext().eventSource.on('chatLoaded', () => {
+        const eventSource = SillyTavern.getContext().eventSource;
+
+        eventSource.on('chatLoaded', () => {
             currentFolderName = '##root##';
             refreshFoldersUI();
         });
+
+        // NEW: Listener for character deletion
+        eventSource.on('characterDeleted', (data) => {
+            console.log('CNotes: "characterDeleted" event caught!');
+            console.log('CNotes: Event data received:', data);
+            // We will add the cleanup logic here once we confirm the data structure.
+        });
+
         console.log('CNotes: Initialization complete.');
     } catch (error) {
         console.error('CNotes: A critical error occurred during initialization.', error);
