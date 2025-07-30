@@ -5,4 +5,5 @@
     "description": "Adds a private notepad to each character for keeping reference notes.",
     "js": "script.js",
     "css": "style.css",
+    "requires": ["1.13.1"]
 }
