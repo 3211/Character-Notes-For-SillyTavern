@@ -1,4 +1,3 @@
-(function () {
     console.log('CNotes: [V19-DeletionLogic] Script file loaded.');
 
     // --- GLOBALS ---
@@ -258,9 +257,8 @@
             console.log('CNotes: "characterDeleted" event caught!');
             // SillyTavern's character ID is the avatar filename. The event provides this.
             const charId = data.avatar;
-
+            console.log(`CNotes: Deleting notes for character ID: ${charId}`);
             if (charId && characterNotesData[charId]) {
-                console.log(`CNotes: Deleting notes for character ID: ${charId}`);
                 delete characterNotesData[charId];
                 saveNotes();
                 SillyTavern.utility.showToast(`Cleaned up notes for deleted character.`, "info");
