@@ -1,52 +1,35 @@
 (function () {
-    console.log('CNotes: Script file loaded and executed.');
+    console.log('CNotes: [V5] Script file loaded. Attempting immediate initialization.');
 
-    // Data store for all notes, keyed by character ID
+    // --- GLOBALS ---
     let characterNotesData = {};
     let currentCharacterId = null;
-
-    // UI Elements
     let modal;
-    let noteSelector;
-    let noteTitleInput;
-    let noteContentTextarea;
+    let noteSelector, noteTitleInput, noteContentTextarea;
 
-    // ----- DATA FUNCTIONS -----
+    // --- FUNCTIONS ---
     async function saveNotes() {
-        console.log('CNotes: saveNotes() called.');
         if (!currentCharacterId) return;
         await SillyTavern.extensions.saveExtensionSettings('Character-Notes', characterNotesData);
-        console.log('CNotes: saveNotes() finished.');
     }
 
     async function loadNotes() {
-        console.log('CNotes: loadNotes() called.');
         const loadedData = await SillyTavern.extensions.loadExtensionSettings('Character-Notes');
-        if (loadedData) {
-            characterNotesData = loadedData;
-            console.log('CNotes: Found and loaded existing notes data.');
-        }
-        console.log('CNotes: loadNotes() finished.');
+        if (loadedData) characterNotesData = loadedData;
     }
 
-    // ----- UI AND EVENT FUNCTIONS -----
     function refreshNoteUI() {
-        console.log('CNotes: refreshNoteUI() called.');
+        console.log('CNotes: Refreshing UI...');
         const context = SillyTavern.getContext();
-        
         if (!context || !context.characterId) {
-            console.log('CNotes: No character loaded. Aborting UI refresh.');
-            if(modal && modal.style.display !== 'none') {
-                SillyTavern.showToast("No character loaded.", "warning");
-                modal.style.display = 'none';
-            }
+            if (modal && modal.style.display !== 'none') modal.style.display = 'none';
             return;
         }
         currentCharacterId = context.characterId;
-        console.log(`CNotes: Refreshing notes for character ID: ${currentCharacterId}`);
         
         noteSelector.innerHTML = '<option value="-1" selected>-- Select a Note --</option>';
-        clearInputFields();
+        noteTitleInput.value = '';
+        noteContentTextarea.value = '';
 
         const notes = characterNotesData[currentCharacterId] || [];
         notes.forEach((note, index) => {
@@ -55,42 +38,62 @@
             option.textContent = note.title;
             noteSelector.appendChild(option);
         });
-        console.log(`CNotes: Populated dropdown with ${notes.length} notes.`);
+        console.log(`CNotes: UI refreshed for character ${currentCharacterId} with ${notes.length} notes.`);
     }
 
     function displaySelectedNote() {
-        console.log('CNotes: displaySelectedNote() called.');
-        // ... (logging inside minor UI functions is less critical for now)
-    }
-
-    function clearInputFields() {
-        console.log('CNotes: clearInputFields() called.');
-        // ...
+        const selectedIndex = parseInt(noteSelector.value, 10);
+        const notes = characterNotesData[currentCharacterId] || [];
+        if (selectedIndex >= 0 && notes[selectedIndex]) {
+            const note = notes[selectedIndex];
+            noteTitleInput.value = note.title;
+            noteContentTextarea.value = note.text;
+        } else {
+            noteTitleInput.value = '';
+            noteContentTextarea.value = '';
+        }
     }
 
     function handleSaveNote() {
-        console.log('CNotes: handleSaveNote() called.');
-        // ...
+        if (!currentCharacterId) return;
+        const title = noteTitleInput.value.trim();
+        const text = noteContentTextarea.value.trim();
+        if (!title) {
+            SillyTavern.showToast("Note title cannot be empty.", "error");
+            return;
+        }
+        
+        if (!characterNotesData[currentCharacterId]) characterNotesData[currentCharacterId] = [];
+        const notes = characterNotesData[currentCharacterId];
+        const selectedIndex = parseInt(noteSelector.value, 10);
+
+        if (selectedIndex >= 0) {
+            notes[selectedIndex] = { title, text };
+        } else {
+            notes.push({ title, text });
+        }
+        saveNotes();
+        refreshNoteUI();
+        SillyTavern.showToast("Note saved successfully!", "success");
     }
 
     function handleDeleteNote() {
-        console.log('CNotes: handleDeleteNote() called.');
-        // ...
+        if (!currentCharacterId) return;
+        const selectedIndex = parseInt(noteSelector.value, 10);
+        if (selectedIndex < 0) return;
+
+        characterNotesData[currentCharacterId].splice(selectedIndex, 1);
+        saveNotes();
+        refreshNoteUI();
+        SillyTavern.showToast("Note deleted.", "success");
     }
 
     function createModal() {
-        console.log('CNotes: createModal() called.');
-        if (document.getElementById('character-notes-modal')) {
-            console.log('CNotes: Modal already exists. Skipping creation.');
-            return;
-        }
+        if (document.getElementById('character-notes-modal')) return;
         modal = document.createElement('div');
         modal.id = 'character-notes-modal';
         modal.innerHTML = `
-            <div id="character-notes-header">
-                <span>Character Notes</span>
-                <button id="character-notes-close" class="fa-solid fa-xmark"></button>
-            </div>
+            <div id="character-notes-header"><span>Character Notes</span><button id="character-notes-close" class="fa-solid fa-xmark"></button></div>
             <div id="character-notes-content">
                 <select id="character-notes-selector"></select>
                 <input type="text" id="character-notes-title" placeholder="Note Title">
@@ -100,10 +103,8 @@
                     <button id="character-notes-save">Save</button>
                     <button id="character-notes-delete">Delete</button>
                 </div>
-            </div>
-        `;
+            </div>`;
         document.body.appendChild(modal);
-        console.log('CNotes: Modal element appended to body.');
 
         noteSelector = document.getElementById('character-notes-selector');
         noteTitleInput = document.getElementById('character-notes-title');
@@ -111,81 +112,61 @@
 
         document.getElementById('character-notes-close').addEventListener('click', () => modal.style.display = 'none');
         noteSelector.addEventListener('change', displaySelectedNote);
-        document.getElementById('character-notes-new').addEventListener('click', clearInputFields);
+        document.getElementById('character-notes-new').addEventListener('click', displaySelectedNote); // Resets fields
         document.getElementById('character-notes-save').addEventListener('click', handleSaveNote);
         document.getElementById('character-notes-delete').addEventListener('click', handleDeleteNote);
         
-        makeDraggable(modal);
-        console.log('CNotes: createModal() finished.');
-    }
-    
-    function makeDraggable(element) {
-        // ... (no logging needed in this utility)
+        // Make draggable utility
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        const header = document.getElementById('character-notes-header');
+        if (header) {
+            header.onmousedown = function(e) {
+                e.preventDefault();
+                pos3 = e.clientX; pos4 = e.clientY;
+                document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
+                document.onmousemove = (e) => {
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX; pos4 = e.clientY;
+                    modal.style.top = (modal.offsetTop - pos2) + "px";
+                    modal.style.left = (modal.offsetLeft - pos1) + "px";
+                };
+            };
+        }
     }
 
-    async function initializeExtension() {
-        console.log('CNotes: initializeExtension() called.');
-        
+    // --- IMMEDIATE EXECUTION ---
+    try {
+        console.log('CNotes: Looking for #extensionsMenu...');
         const extensionsMenu = document.getElementById('extensionsMenu');
-        console.log(`CNotes: Found extensionsMenu element: ${!!extensionsMenu}`);
-        
+        if (!extensionsMenu) {
+            throw new Error("#extensionsMenu not found in the DOM.");
+        }
+        console.log('CNotes: Found #extensionsMenu.');
+
         const menuItem = document.createElement('div');
         menuItem.classList.add('list-group-item', 'flex-container', 'flexGap5', 'interactable');
         menuItem.innerHTML = `<i class="fa-solid fa-note-sticky"></i><span>Character Notes</span>`;
-        console.log('CNotes: Menu item element created.');
-
         menuItem.addEventListener('click', () => {
-            console.log('CNotes: Menu item clicked!');
             modal.style.display = 'block';
             refreshNoteUI();
         });
-        console.log('CNotes: Click listener added to menu item.');
-
+        
         extensionsMenu.appendChild(menuItem);
-        console.log('CNotes: Menu item appended to extensions menu. It should be visible now!');
+        console.log('CNotes: Menu item successfully appended.');
 
         createModal();
-        await loadNotes();
-        console.log('CNotes: initializeExtension() finished successfully.');
-    }
-    
-    function waitForUI() {
-        console.log('CNotes: waitForUI() called from appReady event.');
-        let attempts = 0;
-        const interval = setInterval(() => {
-            attempts++;
-            const extensionsMenu = document.getElementById('extensionsMenu');
-            if (extensionsMenu) {
-                console.log(`CNotes: Found #extensionsMenu after ${attempts} attempts. UI is ready.`);
-                clearInterval(interval);
-                initializeExtension();
-            } else if (attempts > 50) { // Timeout after 5 seconds
-                console.error('CNotes: Timed out waiting for #extensionsMenu. Aborting.');
-                clearInterval(interval);
-            }
-        }, 100);
-    }
+        loadNotes().then(() => {
+            console.log('CNotes: Initial data loaded.');
+        });
 
-    function main() {
-        console.log('CNotes: main() called. Attaching event listeners.');
-        SillyTavern.eventSource.on('appReady', waitForUI);
-        SillyTavern.eventSource.on('chatLoaded', refreshNoteUI);
-        console.log('CNotes: Event listeners attached.');
-    }
+        // This is the only event listener we need for functionality
+        SillyTavern.getContext().eventSource.on('chatLoaded', refreshNoteUI);
+        console.log('CNotes: Successfully attached to chatLoaded event.');
 
-    // This is the new startup logic.
-    console.log('CNotes: Starting up. Polling for SillyTavern.eventSource...');
-    let startupAttempts = 0;
-    const startupInterval = setInterval(() => {
-        startupAttempts++;
-        if (window.SillyTavern && window.SillyTavern.eventSource) {
-            console.log(`CNotes: Found SillyTavern.eventSource after ${startupAttempts} attempts. API is ready.`);
-            clearInterval(startupInterval);
-            main();
-        } else if (startupAttempts > 50) { // Timeout after 5 seconds
-            console.error('CNotes: Timed out waiting for SillyTavern.eventSource. The extension cannot start.');
-            clearInterval(startupInterval);
-        }
-    }, 100);
+    } catch (error) {
+        console.error('CNotes: A critical error occurred during initialization.', error);
+        alert("Character Notes extension failed to initialize. Check the F12 console for details.");
+    }
 
 })();
