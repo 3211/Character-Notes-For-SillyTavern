@@ -45,8 +45,8 @@
     flex-direction: column;
     gap: 10px;
     flex-grow: 1;
-    /* REMOVED: This conflicting overflow property was the cause of the bug. */
-    /* overflow-y: auto; */
+    /* THIS IS THE FIX: It resolves the flexbox calculation bug. */
+    min-height: 0;
 }
 
 .cnotes-folder-row {
