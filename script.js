@@ -1,5 +1,5 @@
 (function () {
-    console.log('CNotes: [V7-Final] Script file loaded.');
+    console.log('CNotes: [V8-Polished] Script file loaded.');
 
     // --- GLOBALS ---
     let characterNotesData = {};
@@ -22,9 +22,7 @@
     }
 
     // ----- UI AND EVENT FUNCTIONS -----
-    // MODIFIED: Now accepts an index to select after refreshing.
     function refreshNoteUI(noteIndexToSelect = -1) {
-        console.log(`CNotes: Refreshing UI. Will select index: ${noteIndexToSelect}`);
         const context = SillyTavern.getContext();
         if (!context || !context.characterId) {
             if (modal && modal.style.display !== 'none') modal.style.display = 'none';
@@ -34,7 +32,6 @@
         
         const notes = characterNotesData[currentCharacterId] || [];
         
-        // Rebuild dropdown
         noteSelector.innerHTML = '<option value="-1">-- New Note --</option>';
         notes.forEach((note, index) => {
             const option = document.createElement('option');
@@ -43,7 +40,6 @@
             noteSelector.appendChild(option);
         });
 
-        // Set the selection to the specified index and update the fields
         noteSelector.value = noteIndexToSelect;
         displaySelectedNote();
     }
@@ -56,13 +52,11 @@
             noteTitleInput.value = note.title;
             noteContentTextarea.value = note.text;
         } else {
-            // This is now the "new note" state
             noteTitleInput.value = '';
             noteContentTextarea.value = '';
         }
     }
     
-    // NEW: A dedicated function for the 'New' button.
     function prepareNewNote() {
         noteSelector.value = -1;
         displaySelectedNote();
@@ -70,7 +64,7 @@
 
     function handleSaveNote() {
         if (!currentCharacterId) return;
-        const title = noteTitleInput.value.trim(); // Title is already being trimmed here
+        const title = noteTitleInput.value.trim();
         const text = noteContentTextarea.value.trim();
         if (!title) {
             SillyTavern.utility.showToast("Note title cannot be empty.", "error");
@@ -81,20 +75,16 @@
         const notes = characterNotesData[currentCharacterId];
         let selectedIndex = parseInt(noteSelector.value, 10);
         
-        // MODIFIED: Determine the index of the note we just saved.
         let savedIndex;
         if (selectedIndex >= 0) {
-            // Updating an existing note
             notes[selectedIndex] = { title, text };
             savedIndex = selectedIndex;
         } else {
-            // Creating a new note
             notes.push({ title, text });
-            savedIndex = notes.length - 1; // It's the last item in the array
+            savedIndex = notes.length - 1;
         }
         
         saveNotes();
-        // MODIFIED: Refresh the UI and keep the saved note selected.
         refreshNoteUI(savedIndex);
         SillyTavern.utility.showToast("Note saved successfully!", "success");
     }
@@ -106,8 +96,18 @@
 
         characterNotesData[currentCharacterId].splice(selectedIndex, 1);
         saveNotes();
-        refreshNoteUI(); // After deleting, refresh to the default "New Note" view
+        refreshNoteUI();
         SillyTavern.utility.showToast("Note deleted.", "success");
+    }
+    
+    // NEW: Function to force the modal back into the viewport.
+    function ensureOnScreen() {
+        const rect = modal.getBoundingClientRect();
+
+        if (rect.left < 0) modal.style.left = '0px';
+        if (rect.top < 0) modal.style.top = '0px';
+        if (rect.right > window.innerWidth) modal.style.left = `${window.innerWidth - rect.width}px`;
+        if (rect.bottom > window.innerHeight) modal.style.top = `${window.innerHeight - rect.height}px`;
     }
 
     function createModal() {
@@ -134,7 +134,7 @@
 
         document.getElementById('character-notes-close').addEventListener('click', () => modal.style.display = 'none');
         noteSelector.addEventListener('change', displaySelectedNote);
-        document.getElementById('character-notes-new').addEventListener('click', prepareNewNote); // FIXED
+        document.getElementById('character-notes-new').addEventListener('click', prepareNewNote);
         document.getElementById('character-notes-save').addEventListener('click', handleSaveNote);
         document.getElementById('character-notes-delete').addEventListener('click', handleDeleteNote);
         
@@ -150,8 +150,8 @@
                     e.preventDefault();
                     pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
                     pos3 = e.clientX; pos4 = e.clientY;
-                    modal.style.top = (modal.offsetTop - pos2) + "px";
-                    modal.style.left = (modal.offsetLeft - pos1) + "px";
+                    modal.style.top = `${modal.offsetTop - pos2}px`;
+                    modal.style.left = `${modal.offsetLeft - pos1}px`;
                 };
             };
         }
@@ -165,9 +165,18 @@
         const menuItem = document.createElement('div');
         menuItem.classList.add('list-group-item', 'flex-container', 'flexGap5', 'interactable');
         menuItem.innerHTML = `<i class="fa-solid fa-note-sticky"></i><span>Character Notes</span>`;
+        
+        // MODIFIED: The menu item now acts as a toggle.
         menuItem.addEventListener('click', () => {
-            modal.style.display = 'block';
-            refreshNoteUI(noteSelector.value); // When opening, stay on the current selection
+            if (modal.style.display === 'flex') {
+                // If it's open, close it.
+                modal.style.display = 'none';
+            } else {
+                // If it's closed, open it, ensure it's on-screen, and refresh.
+                modal.style.display = 'flex';
+                ensureOnScreen(); 
+                refreshNoteUI(noteSelector.value);
+            }
         });
         
         extensionsMenu.appendChild(menuItem);
