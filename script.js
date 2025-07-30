@@ -24,12 +24,20 @@
             characterNotesData = loadedData;
             console.log('Character Notes loaded.');
         }
-        refreshNoteUI();
+        // Don't refresh UI on initial load, wait for chat to be ready
     }
     
     // Refresh the entire UI (dropdown, fields) based on the current character
     function refreshNoteUI() {
         const context = SillyTavern.getContext();
+        // Ensure we have a character loaded before doing anything
+        if (!context || !context.characterId) {
+            if(modal && modal.style.display !== 'none') {
+                SillyTavern.showToast("No character loaded.", "warning");
+                modal.style.display = 'none';
+            }
+            return;
+        }
         currentCharacterId = context.characterId;
         
         // Clear previous options
@@ -69,6 +77,10 @@
 
     // Handle the "Save" button click
     function handleSaveNote() {
+        if (!currentCharacterId) {
+             SillyTavern.showToast("No character loaded. Cannot save note.", "error");
+             return;
+        }
         const title = noteTitleInput.value.trim();
         const text = noteContentTextarea.value.trim();
 
@@ -97,6 +109,10 @@
 
     // Handle the "Delete" button click
     function handleDeleteNote() {
+        if (!currentCharacterId) {
+             SillyTavern.showToast("No character loaded. Cannot delete note.", "error");
+             return;
+        }
         const selectedIndex = parseInt(noteSelector.value, 10);
         if (selectedIndex < 0) {
             SillyTavern.showToast("No note selected to delete.", "warning");
@@ -182,26 +198,24 @@
 
     // This function runs when SillyTavern is ready
     SillyTavern.eventSource.on('appReady', () => {
-        // Create the button to open the notes
-        const notesButton = document.createElement('div');
-        notesButton.className = 'character-button';
-        notesButton.innerHTML = `<i class="fa-solid fa-note-sticky"></i><span>Notes</span>`;
-        notesButton.addEventListener('click', () => {
+        // ########### CHANGE IS HERE ###########
+        // We now use the official API to add a menu item to the "Extensions" dropdown.
+        // This is more stable than adding a button to the character panel.
+        SillyTavern.addExtensionMenu('Character Notes', () => {
+            // This function runs when the menu item is clicked.
+            // It opens the modal and refreshes the content for the current character.
             modal.style.display = 'block';
             refreshNoteUI();
         });
+        // ########### END OF CHANGE ###########
 
-        // Add the button to the character panel
-        const buttonsContainer = document.querySelector('#char_book_anchor');
-        if (buttonsContainer) {
-            buttonsContainer.insertAdjacentElement('beforebegin', notesButton);
-        }
-
+        // We still create the modal and load the notes once on startup.
         createModal();
         loadNotes();
     });
 
-    // This function runs every time a new character chat is loaded
+    // This function runs every time a new character chat is loaded,
+    // ensuring the notes are always relevant to the current character.
     SillyTavern.eventSource.on('chatLoaded', refreshNoteUI);
 
 })();
