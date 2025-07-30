@@ -1,6 +1,6 @@
 {
     "name": "Character Notes",
-    "version": "1.0.0",
+    "version": "1.1.1",
     "author": "7th7andwich",
     "description": "Adds a private notepad to each character for keeping reference notes.",
     "js": "script.js",
