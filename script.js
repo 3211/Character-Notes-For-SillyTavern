@@ -257,7 +257,7 @@
         eventSource.on('characterDeleted', (data) => {
             console.log('CNotes: "characterDeleted" event caught!');
             // SillyTavern's character ID is the avatar filename. The event provides this.
-            const charId = data.avatar;
+            const charId = data.Id;
             console.log(`CNotes: Deleting notes for character ID: ${charId}`);
             if (charId && characterNotesData[charId]) {
                 
