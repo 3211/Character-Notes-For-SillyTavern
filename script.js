@@ -32,7 +32,7 @@
     
     // ----- MODAL VISIBILITY -----
     function openModal() {
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
         isModalOpen = true;
         ensureOnScreen();
         refreshFoldersUI();
