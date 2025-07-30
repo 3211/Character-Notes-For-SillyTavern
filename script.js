@@ -1,5 +1,5 @@
 (function () {
-    console.log('CNotes: [V5] Script file loaded. Attempting immediate initialization.');
+    console.log('CNotes: [V6] Script file loaded. Attempting immediate initialization.');
 
     // --- GLOBALS ---
     let characterNotesData = {};
@@ -7,17 +7,35 @@
     let modal;
     let noteSelector, noteTitleInput, noteContentTextarea;
 
-    // --- FUNCTIONS ---
-    async function saveNotes() {
+    // ########### START OF CHANGES ###########
+
+    // ----- NEW DATA FUNCTIONS -----
+    // This is the new, correct way to load data.
+    function loadNotes() {
+        console.log('CNotes: loadNotes() called.');
+        const context = SillyTavern.getContext();
+        const loadedData = context.extensionSettings['Character-Notes'];
+        if (loadedData) {
+            characterNotesData = loadedData;
+            console.log('CNotes: Found and loaded existing notes data.');
+        }
+    }
+
+    // This is the new, correct way to save data.
+    function saveNotes() {
+        console.log('CNotes: saveNotes() called.');
         if (!currentCharacterId) return;
-        await SillyTavern.extensions.saveExtensionSettings('Character-Notes', characterNotesData);
+        const context = SillyTavern.getContext();
+        // Save our entire notes object to the main settings file.
+        context.extensionSettings['Character-Notes'] = characterNotesData;
+        context.saveSettingsDebounced();
+        console.log('CNotes: saveNotes() finished.');
     }
 
-    async function loadNotes() {
-        const loadedData = await SillyTavern.extensions.loadExtensionSettings('Character-Notes');
-        if (loadedData) characterNotesData = loadedData;
-    }
+    // ############ END OF CHANGES ############
 
+
+    // ----- UI AND EVENT FUNCTIONS -----
     function refreshNoteUI() {
         console.log('CNotes: Refreshing UI...');
         const context = SillyTavern.getContext();
@@ -156,9 +174,8 @@
         console.log('CNotes: Menu item successfully appended.');
 
         createModal();
-        loadNotes().then(() => {
-            console.log('CNotes: Initial data loaded.');
-        });
+        loadNotes();
+        console.log('CNotes: Initial data loaded.');
 
         // This is the only event listener we need for functionality
         SillyTavern.getContext().eventSource.on('chatLoaded', refreshNoteUI);
