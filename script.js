@@ -1,12 +1,12 @@
 (function () {
-    console.log('CNotes: [V9-Final] Script file loaded.');
+    console.log('CNotes: [V10] Script file loaded.');
 
     // --- GLOBALS ---
     let characterNotesData = {};
     let currentCharacterId = null;
     let modal;
     let noteSelector, noteTitleInput, noteContentTextarea;
-    let isModalOpen = false; // NEW: A reliable flag to track the modal's state.
+    let isModalOpen = false;
 
     // ----- DATA FUNCTIONS -----
     function loadNotes() {
@@ -24,7 +24,8 @@
     
     // ----- MODAL VISIBILITY -----
     function openModal() {
-        modal.style.display = 'flex'; // Or 'block' if you reverted the flex CSS
+        // Use 'block' for compatibility if you're not using the flexbox CSS
+        modal.style.display = 'block'; 
         isModalOpen = true;
         ensureOnScreen();
         refreshNoteUI(noteSelector.value);
@@ -125,6 +126,10 @@
         if (document.getElementById('character-notes-modal')) return;
         modal = document.createElement('div');
         modal.id = 'character-notes-modal';
+        
+        // THIS IS THE FIX: Explicitly hide the modal with JS upon creation.
+        modal.style.display = 'none';
+
         modal.innerHTML = `
             <div id="character-notes-header"><span>Character Notes</span><button id="character-notes-close" class="fa-solid fa-xmark"></button></div>
             <div id="character-notes-content">
@@ -143,7 +148,7 @@
         noteTitleInput = document.getElementById('character-notes-title');
         noteContentTextarea = document.getElementById('character-notes-textarea');
 
-        document.getElementById('character-notes-close').addEventListener('click', closeModal); // MODIFIED
+        document.getElementById('character-notes-close').addEventListener('click', closeModal);
         noteSelector.addEventListener('change', displaySelectedNote);
         document.getElementById('character-notes-new').addEventListener('click', prepareNewNote);
         document.getElementById('character-notes-save').addEventListener('click', handleSaveNote);
@@ -176,7 +181,6 @@
         menuItem.classList.add('list-group-item', 'flex-container', 'flexGap5', 'interactable');
         menuItem.innerHTML = `<i class="fa-solid fa-note-sticky"></i><span>Character Notes</span>`;
         
-        // MODIFIED: Toggle logic is now based on the isModalOpen flag.
         menuItem.addEventListener('click', () => {
             if (isModalOpen) {
                 closeModal();
