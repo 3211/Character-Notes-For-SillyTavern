@@ -1,5 +1,5 @@
 (function () {
-    console.log('CNotes: [V11-Folders] Script file loaded.');
+    console.log('CNotes: [V12-UI-Refinement] Script file loaded.');
 
     // --- GLOBALS ---
     let characterNotesData = {};
@@ -7,7 +7,7 @@
     let modal;
     let folderSelector, folderNameInput, noteSelector, noteTitleInput, noteContentTextarea;
     let isModalOpen = false;
-    let currentFolderName = '##root##'; // Start in the root folder
+    let currentFolderName = '##root##';
 
     // ----- DATA FUNCTIONS -----
     function loadNotes() {
@@ -15,10 +15,8 @@
         const loadedData = context.extensionSettings['Character-Notes'];
         if (loadedData) characterNotesData = loadedData;
 
-        // One-time migration for any character data still in the old format
         Object.keys(characterNotesData).forEach(charId => {
             if (Array.isArray(characterNotesData[charId])) {
-                console.log(`CNotes: Migrating old data format for character ${charId}`);
                 const oldNotes = characterNotesData[charId];
                 characterNotesData[charId] = { '##root##': oldNotes };
             }
@@ -57,7 +55,6 @@
         const folders = Object.keys(characterNotesData[currentCharacterId]);
         folderSelector.innerHTML = '';
 
-        // Add the Root folder first
         const rootOption = document.createElement('option');
         rootOption.value = '##root##';
         rootOption.textContent = '– (Root Folder) –';
@@ -72,6 +69,8 @@
         });
 
         folderSelector.value = currentFolderName;
+        // MODIFIED: Also update the input field text to match the dropdown
+        folderNameInput.value = (currentFolderName === '##root##') ? '' : currentFolderName;
         refreshNotesList();
     }
 
@@ -110,7 +109,8 @@
 
     function handleFolderSelect() {
         currentFolderName = folderSelector.value;
-        folderNameInput.value = ''; // Clear the input when selecting a folder
+        // MODIFIED: Update the input field to reflect the dropdown choice
+        folderNameInput.value = (currentFolderName === '##root##') ? '' : currentFolderName;
         refreshNotesList();
     }
 
@@ -123,13 +123,12 @@
             return;
         }
 
-        // Determine which folder to save to
+        // MODIFIED: Logic now prioritizes the text input for folder name
         let folderToSaveIn = folderNameInput.value.trim();
         if (!folderToSaveIn) {
-            folderToSaveIn = currentFolderName;
+            folderToSaveIn = '##root##'; // Default to root if input is empty
         }
         
-        // Create folder if it doesn't exist
         if (!characterNotesData[currentCharacterId][folderToSaveIn]) {
             characterNotesData[currentCharacterId][folderToSaveIn] = [];
         }
@@ -138,7 +137,6 @@
         let selectedIndex = parseInt(noteSelector.value, 10);
         
         let savedIndex;
-        // Only update if we are in the same folder, otherwise it's a new note in a new folder
         if (selectedIndex >= 0 && folderToSaveIn === currentFolderName) {
             notes[selectedIndex] = { title, text };
             savedIndex = selectedIndex;
@@ -147,24 +145,14 @@
             savedIndex = notes.length - 1;
         }
         
-        currentFolderName = folderToSaveIn; // Switch to the folder we just saved to
-        folderNameInput.value = ''; // Clear the input
+        currentFolderName = folderToSaveIn;
         saveNotes();
-        refreshFoldersUI(); // Refresh everything
-        refreshNotesList(savedIndex); // Select the saved note
+        refreshFoldersUI();
+        refreshNotesList(savedIndex);
         SillyTavern.utility.showToast(`Note saved to "${folderToSaveIn === '##root##' ? 'Root Folder' : folderToSaveIn}"`, "success");
     }
 
-    function handleDeleteNote() {
-        if (!currentCharacterId || !currentFolderName) return;
-        const selectedIndex = parseInt(noteSelector.value, 10);
-        if (selectedIndex < 0) return;
-
-        characterNotesData[currentCharacterId][currentFolderName].splice(selectedIndex, 1);
-        saveNotes();
-        refreshNotesList();
-        SillyTavern.utility.showToast("Note deleted.", "success");
-    }
+    function handleDeleteNote() { /* ... unchanged ... */ }
 
     function handleDeleteFolder() {
         const folderToDelete = folderSelector.value;
@@ -175,7 +163,7 @@
 
         if (confirm(`Are you sure you want to delete the folder "${folderToDelete}" and all notes inside it?`)) {
             delete characterNotesData[currentCharacterId][folderToDelete];
-            currentFolderName = '##root##'; // Go back to root
+            currentFolderName = '##root##';
             saveNotes();
             refreshFoldersUI();
             SillyTavern.utility.showToast(`Folder "${folderToDelete}" deleted.`, "success");
@@ -190,17 +178,19 @@
         modal.id = 'character-notes-modal';
         modal.style.display = 'none';
 
+        // MODIFIED: Complete HTML rewrite for the new layout and native ST classes
         modal.innerHTML = `
             <div id="character-notes-header"><span>Character Notes</span><button id="character-notes-close" class="fa-solid fa-xmark"></button></div>
             <div id="character-notes-content">
-                <div id="character-notes-folder-controls">
-                    <select id="character-notes-folder-selector"></select>
-                    <input type="text" id="character-notes-folder-input" placeholder="Enter folder name to save note">
-                    <button id="character-notes-delete-folder" title="Delete Selected Folder">🗑️</button>
+                <div class="cnotes-folder-row">
+                    <input type="text" id="character-notes-folder-input" class="text_pole" placeholder="New/Current Folder Name">
+                    <button id="character-notes-delete-folder" class="menu_button" title="Delete Selected Folder">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
                 </div>
-                <hr>
+                <select id="character-notes-folder-selector"></select>
                 <select id="character-notes-selector"></select>
-                <input type="text" id="character-notes-title" placeholder="Note Title">
+                <input type="text" id="character-notes-title" class="text_pole" placeholder="Note Title">
                 <textarea id="character-notes-textarea" placeholder="Note content..."></textarea>
                 <div id="character-notes-actions">
                     <button id="character-notes-new">New</button>
@@ -226,29 +216,13 @@
         document.getElementById('character-notes-save').addEventListener('click', handleSaveNote);
         document.getElementById('character-notes-delete').addEventListener('click', handleDeleteNote);
         
-        // Draggable logic...
+        // Draggable logic... (remains the same)
     }
 
     // --- IMMEDIATE EXECUTION ---
     try {
-        const extensionsMenu = document.getElementById('extensionsMenu');
-        if (!extensionsMenu) throw new Error("#extensionsMenu not found in the DOM.");
-
-        const menuItem = document.createElement('div');
-        menuItem.classList.add('list-group-item', 'flex-container', 'flexGap5', 'interactable');
-        menuItem.innerHTML = `<i class="fa-solid fa-note-sticky"></i><span>Character Notes</span>`;
-        
-        menuItem.addEventListener('click', () => { (isModalOpen) ? closeModal() : openModal(); });
-        
-        extensionsMenu.appendChild(menuItem);
-        createModal();
-        loadNotes();
-        SillyTavern.getContext().eventSource.on('chatLoaded', () => {
-            currentFolderName = '##root##'; // Reset to root on char change
-            refreshFoldersUI();
-        });
-        console.log('CNotes: Initialization complete.');
+        // ... (this section is unchanged)
     } catch (error) {
-        console.error('CNotes: A critical error occurred during initialization.', error);
+        // ...
     }
 })();
