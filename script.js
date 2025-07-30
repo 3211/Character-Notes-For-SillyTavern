@@ -1,11 +1,12 @@
 (function () {
-    console.log('CNotes: [V8-Polished] Script file loaded.');
+    console.log('CNotes: [V9-Final] Script file loaded.');
 
     // --- GLOBALS ---
     let characterNotesData = {};
     let currentCharacterId = null;
     let modal;
     let noteSelector, noteTitleInput, noteContentTextarea;
+    let isModalOpen = false; // NEW: A reliable flag to track the modal's state.
 
     // ----- DATA FUNCTIONS -----
     function loadNotes() {
@@ -20,12 +21,24 @@
         context.extensionSettings['Character-Notes'] = characterNotesData;
         context.saveSettingsDebounced();
     }
+    
+    // ----- MODAL VISIBILITY -----
+    function openModal() {
+        modal.style.display = 'flex'; // Or 'block' if you reverted the flex CSS
+        isModalOpen = true;
+        ensureOnScreen();
+        refreshNoteUI(noteSelector.value);
+    }
+    function closeModal() {
+        modal.style.display = 'none';
+        isModalOpen = false;
+    }
 
     // ----- UI AND EVENT FUNCTIONS -----
     function refreshNoteUI(noteIndexToSelect = -1) {
         const context = SillyTavern.getContext();
         if (!context || !context.characterId) {
-            if (modal && modal.style.display !== 'none') modal.style.display = 'none';
+            if (isModalOpen) closeModal();
             return;
         }
         currentCharacterId = context.characterId;
@@ -100,10 +113,8 @@
         SillyTavern.utility.showToast("Note deleted.", "success");
     }
     
-    // NEW: Function to force the modal back into the viewport.
     function ensureOnScreen() {
         const rect = modal.getBoundingClientRect();
-
         if (rect.left < 0) modal.style.left = '0px';
         if (rect.top < 0) modal.style.top = '0px';
         if (rect.right > window.innerWidth) modal.style.left = `${window.innerWidth - rect.width}px`;
@@ -132,13 +143,12 @@
         noteTitleInput = document.getElementById('character-notes-title');
         noteContentTextarea = document.getElementById('character-notes-textarea');
 
-        document.getElementById('character-notes-close').addEventListener('click', () => modal.style.display = 'none');
+        document.getElementById('character-notes-close').addEventListener('click', closeModal); // MODIFIED
         noteSelector.addEventListener('change', displaySelectedNote);
         document.getElementById('character-notes-new').addEventListener('click', prepareNewNote);
         document.getElementById('character-notes-save').addEventListener('click', handleSaveNote);
         document.getElementById('character-notes-delete').addEventListener('click', handleDeleteNote);
         
-        // Make draggable utility
         let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
         const header = document.getElementById('character-notes-header');
         if (header) {
@@ -166,29 +176,21 @@
         menuItem.classList.add('list-group-item', 'flex-container', 'flexGap5', 'interactable');
         menuItem.innerHTML = `<i class="fa-solid fa-note-sticky"></i><span>Character Notes</span>`;
         
-        // MODIFIED: The menu item now acts as a toggle.
+        // MODIFIED: Toggle logic is now based on the isModalOpen flag.
         menuItem.addEventListener('click', () => {
-            if (modal.style.display === 'flex') {
-                // If it's open, close it.
-                modal.style.display = 'none';
+            if (isModalOpen) {
+                closeModal();
             } else {
-                // If it's closed, open it, ensure it's on-screen, and refresh.
-                modal.style.display = 'flex';
-                ensureOnScreen(); 
-                refreshNoteUI(noteSelector.value);
+                openModal();
             }
         });
         
         extensionsMenu.appendChild(menuItem);
-
         createModal();
         loadNotes();
-
         SillyTavern.getContext().eventSource.on('chatLoaded', () => refreshNoteUI());
         console.log('CNotes: Initialization complete.');
-
     } catch (error) {
         console.error('CNotes: A critical error occurred during initialization.', error);
     }
-
 })();
