@@ -27,10 +27,11 @@
     // ----- UI AND EVENT FUNCTIONS -----
     function refreshNoteUI() {
         const context = SillyTavern.getContext();
+        // This is where we check if a character is loaded, just as you suggested!
         if (!context || !context.characterId) {
             if(modal && modal.style.display !== 'none') {
                 SillyTavern.showToast("No character loaded.", "warning");
-                modal.style.display = 'none';
+                modal.style.display = 'none'; // Close the modal if no character is active
             }
             return;
         }
@@ -184,10 +185,7 @@
         }
     }
 
-    // This function will contain all our setup logic
     async function initializeExtension() {
-        console.log("Character Notes: Initializing extension...");
-        
         const extensionsMenu = document.getElementById('extensionsMenu');
         
         const menuItem = document.createElement('div');
@@ -206,24 +204,32 @@
 
         createModal();
         await loadNotes();
-        console.log("Character Notes: Initialization complete.");
     }
     
-    // This new function waits for the UI to be ready before running our setup
     function waitForUI() {
-        console.log("Character Notes: Waiting for UI to be ready...");
         const interval = setInterval(() => {
             const extensionsMenu = document.getElementById('extensionsMenu');
             if (extensionsMenu) {
-                console.log("Character Notes: UI is ready, clearing interval.");
                 clearInterval(interval);
                 initializeExtension();
             }
-        }, 100); // Check every 100ms
+        }, 100);
     }
 
-    // Start the whole process
-    SillyTavern.eventSource.on('appReady', waitForUI);
-    SillyTavern.eventSource.on('chatLoaded', refreshNoteUI);
+    // This function will now run first. It waits for the API to be ready.
+    function main() {
+        // Now that SillyTavern.eventSource exists, we can safely add our listeners.
+        SillyTavern.eventSource.on('appReady', waitForUI);
+        SillyTavern.eventSource.on('chatLoaded', refreshNoteUI);
+    }
+
+    // This is the new startup logic. It repeatedly checks for the core API.
+    // Once the API is ready, it runs our main() function to set everything else up.
+    const startupInterval = setInterval(() => {
+        if (window.SillyTavern && window.SillyTavern.eventSource) {
+            clearInterval(startupInterval);
+            main();
+        }
+    }, 100);
 
 })();
