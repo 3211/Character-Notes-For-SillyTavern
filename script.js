@@ -110,62 +110,52 @@
         if (rect.bottom > window.innerHeight) modal.style.top = `${window.innerHeight - rect.height}px`;
     }
 
-function createModal() {
-    if (document.getElementById('character-notes-modal')) return;
-    modal = document.createElement('div');
-    // ADDED: 'drawer-content' class to adopt the main panel theme.
-    modal.id = 'character-notes-modal';
-    modal.classList.add('drawer-content'); 
+    function createModal() {
+        if (document.getElementById('character-notes-modal')) return;
+        modal = document.createElement('div');
+        modal.id = 'character-notes-modal';
+        modal.innerHTML = `
+            <div id="character-notes-header"><span>Character Notes</span><button id="character-notes-close" class="fa-solid fa-xmark"></button></div>
+            <div id="character-notes-content">
+                <select id="character-notes-selector"></select>
+                <input type="text" id="character-notes-title" placeholder="Note Title">
+                <textarea id="character-notes-textarea" placeholder="Note content..."></textarea>
+                <div id="character-notes-actions">
+                    <button id="character-notes-new">New</button>
+                    <button id="character-notes-save">Save</button>
+                    <button id="character-notes-delete">Delete</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
 
-    modal.innerHTML = `
-        // ADDED: 'panelControlBar' to style the header like other panels.
-        <div id="character-notes-header" class="panelControlBar"> 
-            <span>Character Notes</span>
-            // ADDED: 'floating_panel_close' for native close button styling.
-            <button id="character-notes-close" class="fa-solid fa-xmark floating_panel_close"></button>
-        </div>
-        <div id="character-notes-content">
-            <select id="character-notes-selector"></select>
-            // ADDED: 'text_pole' for native input styling.
-            <input type="text" id="character-notes-title" class="text_pole" placeholder="Note Title">
-            <textarea id="character-notes-textarea" placeholder="Note content..."></textarea>
-            <div id="character-notes-actions">
-                <button id="character-notes-new">New</button>
-                <button id="character-notes-save">Save</button>
-                <button id="character-notes-delete">Delete</button>
-            </div>
-        </div>`;
-    document.body.appendChild(modal);
+        noteSelector = document.getElementById('character-notes-selector');
+        noteTitleInput = document.getElementById('character-notes-title');
+        noteContentTextarea = document.getElementById('character-notes-textarea');
 
-    // The rest of the function remains the same...
-    noteSelector = document.getElementById('character-notes-selector');
-    noteTitleInput = document.getElementById('character-notes-title');
-    noteContentTextarea = document.getElementById('character-notes-textarea');
-
-    document.getElementById('character-notes-close').addEventListener('click', () => modal.style.display = 'none');
-    noteSelector.addEventListener('change', displaySelectedNote);
-    document.getElementById('character-notes-new').addEventListener('click', prepareNewNote);
-    document.getElementById('character-notes-save').addEventListener('click', handleSaveNote);
-    document.getElementById('character-notes-delete').addEventListener('click', handleDeleteNote);
-    
-    // Make draggable utility
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    const header = document.getElementById('character-notes-header');
-    if (header) {
-        header.onmousedown = function(e) {
-            e.preventDefault();
-            pos3 = e.clientX; pos4 = e.clientY;
-            document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
-            document.onmousemove = (e) => {
+        document.getElementById('character-notes-close').addEventListener('click', () => modal.style.display = 'none');
+        noteSelector.addEventListener('change', displaySelectedNote);
+        document.getElementById('character-notes-new').addEventListener('click', prepareNewNote);
+        document.getElementById('character-notes-save').addEventListener('click', handleSaveNote);
+        document.getElementById('character-notes-delete').addEventListener('click', handleDeleteNote);
+        
+        // Make draggable utility
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        const header = document.getElementById('character-notes-header');
+        if (header) {
+            header.onmousedown = function(e) {
                 e.preventDefault();
-                pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
                 pos3 = e.clientX; pos4 = e.clientY;
-                modal.style.top = `${modal.offsetTop - pos2}px`;
-                modal.style.left = `${modal.offsetLeft - pos1}px`;
+                document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
+                document.onmousemove = (e) => {
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX; pos4 = e.clientY;
+                    modal.style.top = `${modal.offsetTop - pos2}px`;
+                    modal.style.left = `${modal.offsetLeft - pos1}px`;
+                };
             };
-        };
+        }
     }
-}
 
     // --- IMMEDIATE EXECUTION ---
     try {
