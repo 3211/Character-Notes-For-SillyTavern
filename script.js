@@ -1,5 +1,5 @@
 (function () {
-    console.log('CNotes: [V18-DeletionListener] Script file loaded.');
+    console.log('CNotes: [V19-DeletionLogic] Script file loaded.');
 
     // --- GLOBALS ---
     let characterNotesData = {};
@@ -253,11 +253,18 @@
             refreshFoldersUI();
         });
 
-        // NEW: Listener for character deletion
+        // MODIFIED: Listener for character deletion now contains the cleanup logic.
         eventSource.on('characterDeleted', (data) => {
             console.log('CNotes: "characterDeleted" event caught!');
-            console.log('CNotes: Event data received:', data);
-            // We will add the cleanup logic here once we confirm the data structure.
+            // SillyTavern's character ID is the avatar filename. The event provides this.
+            const charId = data.avatar;
+
+            if (charId && characterNotesData[charId]) {
+                console.log(`CNotes: Deleting notes for character ID: ${charId}`);
+                delete characterNotesData[charId];
+                saveNotes();
+                SillyTavern.utility.showToast(`Cleaned up notes for deleted character.`, "info");
+            }
         });
 
         console.log('CNotes: Initialization complete.');
