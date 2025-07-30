@@ -106,3 +106,25 @@
     background-color: #f44336; /* Red */
     color: white;
 }
+
+#character-notes-folder-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#character-notes-folder-controls select,
+#character-notes-folder-controls input {
+    flex-grow: 1;
+}
+
+#character-notes-delete-folder {
+    flex-shrink: 0; /* Prevent the delete button from shrinking */
+    padding: 5px 8px !important;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #5a6170; /* Or whatever color fits your theme */
+    margin: 10px 0;
+}
