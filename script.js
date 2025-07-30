@@ -1,5 +1,5 @@
 (function () {
-    console.log('CNotes: [V16-Clean] Script file loaded.');
+    console.log('CNotes: [V17-PruneDisabled] Script file loaded.');
 
     // --- GLOBALS ---
     let characterNotesData = {};
@@ -15,6 +15,7 @@
         const loadedData = context.extensionSettings['Character-Notes'];
         if (loadedData) characterNotesData = loadedData;
 
+        // One-time migration for any character data still in the old format
         Object.keys(characterNotesData).forEach(charId => {
             if (Array.isArray(characterNotesData[charId])) {
                 const oldNotes = characterNotesData[charId];
@@ -30,25 +31,6 @@
         context.saveSettingsDebounced();
     }
     
-    function pruneOrphanedNotes() {
-        const context = SillyTavern.getContext();
-        const existingCharIds = new Set(context.characters.map(char => char.avatar));
-        const noteCharIds = Object.keys(characterNotesData);
-        let prunedCount = 0;
-
-        for (const charId of noteCharIds) {
-            if (!existingCharIds.has(charId)) {
-                delete characterNotesData[charId];
-                prunedCount++;
-            }
-        }
-
-        if (prunedCount > 0) {
-            saveNotes();
-            SillyTavern.utility.showToast(`${prunedCount} orphaned note entries were cleaned up.`, "info");
-        }
-    }
-
     // ----- MODAL VISIBILITY -----
     function openModal() {
         modal.style.display = 'flex';
@@ -263,7 +245,6 @@
         extensionsMenu.appendChild(menuItem);
         createModal();
         loadNotes();
-        pruneOrphanedNotes();
 
         SillyTavern.getContext().eventSource.on('chatLoaded', () => {
             currentFolderName = '##root##';
